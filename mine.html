@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        @import url('https://fastly.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.1/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css');
+
+        * {
+            font-family: "Wanted Sans Variable";
+            text-align: center;
+        }
+
+        #board {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #board tr td {
+            background: gray;
+            width: 30px;
+            height: 30px;
+            text-align: center;
+        }
+
+        #board tr td.clicked {
+            background: beige;
+        }
+
+        #board tr td.mine {
+            background: #FF0000;
+        }
+    </style>
+</head>
+
+<body>
+<h1>지뢰찾기</h1>
+<table id=board>
+</table>
+<BUTTON onclick="genGrid();">새로운 게임</BUTTON>
+<script>
+    let grid = document.getElementById("board");
+    var arr = new Array(8);
+    for (let i=0; i<8; i++){
+        arr[i] = new Array(8);
+    }
+    var otherarr = new Array(8);
+    for (let i=0; i<8; i++){
+        otherarr[i] = new Array(8);
+    }
+
+    genGrid();
+
+    function genGrid() {
+        grid.innerHTML = "";
+        let mineCount = 0;
+        for (let i = 0; i < 8; i++) {
+            row = grid.insertRow(i);
+            for (var j = 0; j < 8; j++) {
+                cell = row.insertCell(j);
+                cell.onclick = function() { clickBox(this); };
+                cell.oncontextmenu = function(e) {
+                    e.preventDefault();
+                    flagCell(this);
+                };
+                var mine = document.createAttribute("mine");
+                if (Math.random() < 0.2 && mineCount < 10) {
+                    mine.value = "true";
+                    arr[i][j] = "1";
+                    mineCount++;
+                } else {
+                    mine.value = "false";
+                    arr[i][j] = "0";
+                }
+                cell.setAttributeNode(mine);
+                otherarr[i][j] = (8 * i) + j;
+            }
+        }
+    }
+
+    function nearNineCellIsMine(row, col) {
+        let count = 0;
+        for (let i = Math.max(0, row - 1); i <= Math.min(7, row + 1); i++) {
+            for (let j = Math.max(0, col - 1); j <= Math.min(7, col + 1); j++) {
+                if (arr[i][j] === "1") {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    function clickBox(cell) {
+        if (cell.className === 'flagged') return;  // 깃발이 꽂힌 셀은 클릭할 수 없음
+
+        let row = cell.parentNode.rowIndex;
+        let col = cell.cellIndex;
+
+        if (cell.getAttribute("mine") == "true") {
+            cell.className = "mine";
+            revealAllMines();
+            alert("게임이 종료되었습니다.");
+        } else {
+            revealCell(row, col);
+        }
+    }
+
+    function revealCell(row, col) {
+        let cell = grid.rows[row].cells[col];
+        if (cell.className === "clicked" || cell.className === "flagged") return;
+
+        cell.className = "clicked";
+        let mineCount = nearNineCellIsMine(row, col);
+
+        if (mineCount > 0) {
+            cell.innerHTML = mineCount;
+        } else {
+            for (let i = Math.max(0, row - 1); i <= Math.min(7, row + 1); i++) {
+                for (let j = Math.max(0, col - 1); j <= Math.min(7, col + 1); j++) {
+                    if (i !== row || j !== col) {
+                        revealCell(i, j);
+                    }
+                }
+            }
+        }
+    }
+
+    function revealAllMines() {
+        for (let i = 0; i < 8; i++) {
+            for (let j = 0; j < 8; j++) {
+                let cell = grid.rows[i].cells[j];
+                if (cell.getAttribute("mine") == "true") {
+                    cell.className = "mine";
+                }
+            }
+        }
+    }
+
+    function flagCell(cell) {
+        if (cell.className === 'clicked') return;  // 이미 열린 셀은 깃발을 꽂을 수 없음
+
+        if (cell.className === 'flagged') {
+            cell.className = '';
+            cell.innerHTML = '';
+        } else {
+            cell.className = 'flagged';
+            cell.innerHTML = '🚩';
+        }
+    }
+</script>
+</body>
+
+</html>
